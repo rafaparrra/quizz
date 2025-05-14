@@ -18,7 +18,7 @@ auth = stauth.Authenticate(
     config['cookie']['key'],
     config['cookie']['expiry_days'],
 )
-name, auth_status, username = auth.login('Login', 'main')
+name, auth_status, username = auth.login('Login')
 if not auth_status:
     st.stop()
 
