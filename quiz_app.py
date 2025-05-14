@@ -19,16 +19,10 @@ def load_quiz_df():
     df['Asignatura_clean'] = df['Asignatura'].str.upper()
     return df.dropna(subset=['Pregunta'])
 
-# Carga y prepara casos prácticos (wide-to-long)
-@st.cache_data
-def load_cases_df():
+# Carga casos prácticos desde columnas específicas
+def load_cases_wide():
     path = Path(__file__).parent / 'Daypo_URLs_por_Asignatura.xlsx'
-    wide = pd.read_excel(path)
-    # Convertir formato ancho a filas
-    cases = wide.melt(var_name='Asignatura', value_name='URL')
-    cases['Asignatura'] = cases['Asignatura'].astype(str).str.strip()
-    cases['Asignatura_clean'] = cases['Asignatura'].str.upper()
-    return cases.dropna(subset=['URL'])
+    return pd.read_excel(path)
 
 # Inicializa el quiz para una asignatura dada
 def init_quiz(subject_clean):
