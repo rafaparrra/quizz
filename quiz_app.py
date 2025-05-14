@@ -154,6 +154,14 @@ else:
     if total == 0:
         st.warning('No hay preguntas para esta asignatura.')
     else:
+            # Mostrar botón para volver al quiz normal si estás en el modo solo-normas
+    if subject_clean == normalize_name('Normativa de Ciberseguridad (solo normas)'):
+        if st.button('↩ Volver al Quiz completo de Normativa'):
+            subject_clean = normalize_name('Normativa de Ciberseguridad')
+            st.session_state.subject_clean = subject_clean
+            init_quiz(subject_clean)
+            st.session_state.page = 'quiz'
+
         st.write(f"Asignatura: **{subject}**")
         st.write(f"Pregunta {idx+1} de {total} | Aciertos: {sc} | Errores: {wrong}")
         st.markdown(f"**{qs[idx]['pregunta']}**")
