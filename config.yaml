@@ -1,15 +1,12 @@
 credentials:
-  users:
-    rafa.parrra:
-      name: Rafa Parrra
-      password: "r94cd8jGq1g3"
-    ARM:
-      name: ARM
-      password: "HOt5w0FzfMFf"
-    Fabo:
-      name: Fabo
-      password: "J8laMITm1L3X"
-
+  usernames:
+    <usuario1>:
+      name: <Nombre 1>
+      password: <Contraseña 1>
+    <usuario2>:
+      name: <Nombre 2>
+      password: <Contraseña 2>
+    …
 cookie:
   name: quizapp_session
   key: alguna_clave_secreta_aleatoria
