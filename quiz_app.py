@@ -101,6 +101,26 @@ with d2:
 page = st.session_state.get('page', 'quiz')
 if page == 'cases':
     st.header(f'Casos Prácticos – {subject}')
+    # Matcheo flexible de columna
+    cols = list(cases_wide.columns)
+    matches = []
+    for col in cols:
+        col_clean = normalize_name(col)
+        if subject_clean in col_clean or col_clean in subject_clean:
+            matches.append(col)
+    if matches:
+        col_name = matches[0]
+        urls = cases_wide[col_name].dropna().tolist()
+        if urls:
+            for url in urls:
+                st.markdown(f"- [Caso Práctico]({url})")
+        else:
+            st.info('No hay URLs en esa asignatura.')
+    else:
+        st.info('No hay casos prácticos para esta asignatura.')
+    st.button('Volver a Preguntas', key='btn_back', on_click=lambda: st.session_state.update({'page':'quiz'}))
+else:
+    st.header(f'Casos Prácticos – {subject}')
     # Encontrar columna matching normalizado
     matched = [col for col in cases_wide.columns if normalize_name(col) == subject_clean]
     if matched:
