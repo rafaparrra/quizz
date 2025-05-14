@@ -11,7 +11,7 @@ def load_questions():
     excel = Path(__file__).parent / 'Quizz Completo.xlsx'
     df = pd.read_excel(excel).dropna(subset=['Pregunta'])
     df = df.sample(frac=1, random_state=42).reset_index(drop=True)
-    qs = []
+    questions = []
     for _, row in df.iterrows():
         opts = [row[c] for c in df.columns if c.startswith('Opción') and pd.notna(row[c])]
         try:
@@ -19,63 +19,68 @@ def load_questions():
         except:
             correct = None
         random.shuffle(opts)
-        qs.append({'pregunta': row['Pregunta'], 'opciones': opts, 'correcto': correct})
-    return qs
+        questions.append({'pregunta': row['Pregunta'], 'opciones': opts, 'correcto': correct})
+    return questions
 
-# Inicialización del estado de la sesión
-def init_state():
+# Callbacks para botones
+def check_answer():
+    idx = st.session_state.current
+    choice = st.session_state[f'choice_{idx}']
+    st.session_state.answered[idx] = True
+    st.session_state.selections[idx] = choice
+    if choice == st.session_state.questions[idx]['correcto']:
+        st.session_state.score += 1
+        st.success('¡Correcto! 🎉')
+    else:
+        correct = st.session_state.questions[idx]['correcto']
+        st.error(f'Incorrecto. Correcto: {correct}')
+
+def next_question():
+    st.session_state.current += 1
+
+def restart_quiz():
+    for key in list(st.session_state.keys()):
+        del st.session_state[key]
+
+# Inicialización del estado
+if 'questions' not in st.session_state:
     st.session_state.questions = load_questions()
     st.session_state.current = 0
-    st.session_state.answered = [False] * len(st.session_state.questions)
-    st.session_state.selections = [None] * len(st.session_state.questions)
+    total = len(st.session_state.questions)
+    st.session_state.answered = [False] * total
+    st.session_state.selections = [None] * total
     st.session_state.score = 0
 
-if 'questions' not in st.session_state:
-    init_state()
-
-qs = st.session_state.questions
-n = len(qs)
+questions = st.session_state.questions
+n = len(questions)
 idx = st.session_state.current
 
-# Pantalla de Quiz
+# Interfaz
 st.title('🚀 Quiz Rápido')
-
 if idx < n:
-    # Encabezado de progreso
     st.write(f'Pregunta {idx+1} de {n}   |   Aciertos: {st.session_state.score}')
-    # Mostrar el texto de la pregunta
-    question_text = qs[idx]['pregunta']
-    st.markdown(f"**{question_text}**")
+    st.markdown(f"**{questions[idx]['pregunta']}**")
 
-    # Opciones de respuesta
-    choice = st.radio('Opciones:', qs[idx]['opciones'], key=f'choice_{idx}')
+    # Radio widget
+    st.radio(
+        'Opciones:',
+        questions[idx]['opciones'],
+        key=f'choice_{idx}'
+    )
 
-    # Botón para comprobar la respuesta
+    # Botón Comprobar principal
     if not st.session_state.answered[idx]:
-        if st.button('✔ Comprobar', key=f'check_{idx}'):
-            st.session_state.answered[idx] = True
-            st.session_state.selections[idx] = choice
-            if choice == qs[idx]['correcto']:
-                st.session_state.score += 1
-                st.success('¡Correcto! 🎉')
-            else:
-                st.error(f'Incorrecto. Correcto: {qs[idx]["correcto"]}')
+        st.button('✔ Comprobar', on_click=check_answer, key=f'check_{idx}')
     else:
-        # Después de comprobar, avanzar a la siguiente o ver resultado
-        if idx < n - 1:
-            if st.button('➡ Siguiente', key=f'next_{idx}'):
-                st.session_state.current += 1
+        # Una vez comprobado, botón para avanzar o finalizar
+        if idx < n-1:
+            st.button('➡ Siguiente', on_click=next_question, key=f'next_{idx}')
         else:
-            if st.button('🏁 Ver resultado', key='finish'):
-                st.session_state.current += 1
+            st.button('🏁 Ver resultado', on_click=next_question, key='finish')
 else:
     # Resultado final
     st.header('🎉 Resultado Final')
     st.write(f'Has acertado **{st.session_state.score}** de **{n}** preguntas.')
     if st.session_state.score == n:
         st.balloons()
-    # Botón para reiniciar el quiz
-    if st.button('🔄 Reiniciar', key='reset'):
-        for k in list(st.session_state.keys()):
-            del st.session_state[k]
-        st.experimental_rerun()
+    st.button('🔄 Reiniciar', on_click=restart_quiz, key='reset')
