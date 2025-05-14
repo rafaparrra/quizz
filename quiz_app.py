@@ -90,10 +90,10 @@ if st.session_state.get('subject_clean') != subject_clean:
     init_quiz(subject_clean)
     st.session_state.page = 'quiz'
 
-# Botones globales
-d1, d2 = st.columns(2)
-with d1:
-    st.button('Ver Preguntas', key='btn_ver', on_click=lambda: st.session_state.update({'page': 'quiz', 'feedback': ''}))
+# Botón global para ir a casos prácticos
+col_c = st.columns(1)[0]
+with col_c:
+    st.button('Casos Prácticos', key='btn_cases', on_click=lambda: st.session_state.update({'page': 'cases'}))
 with d2:
     st.button('Casos Prácticos', key='btn_cases', on_click=lambda: st.session_state.update({'page': 'cases'}))
 
