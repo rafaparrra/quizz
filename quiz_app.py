@@ -65,7 +65,7 @@ cases_df = cases_wide.copy()  # wide format kept for quiz
 display_subjects = sorted(df_quiz['Asignatura'].unique())
 if len(display_subjects) <= 1:
     display_subjects = ['TODAS']
-subject = st.selectbox('Selecciona asignatura:', display_subjects)
+subject = st.selectbox('Selecciona asignatura:', display_subjects, key='subject')
 subject_clean = subject.strip().upper()
 
 # Reiniciar quiz al cambiar asignatura
