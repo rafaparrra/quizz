@@ -98,29 +98,30 @@ if st.session_state.get('subject_clean') != subject_clean:
     init_quiz(subject_clean)
     st.session_state.page = 'quiz'
 
-# Botón extra para "solo normas"
-if st.button('🧾 Quiz solo Normas de Ciberseguridad'):
-    df = load_quiz_normas_shuffled()
-    subject_clean = normalize_name('Normativa de Ciberseguridad (solo normas)')
-    sub = df[df['Asignatura_clean'] == subject_clean].sample(frac=1).reset_index(drop=True)
+# Mostrar botón solo si la asignatura seleccionada es Normativa de Ciberseguridad
+if normalize_name(subject) == normalize_name('Normativa de Ciberseguridad'):
+    if st.button('🧾 Quiz solo Normas de Ciberseguridad'):
+        df = load_quiz_normas_shuffled()
+        subject_clean = normalize_name('Normativa de Ciberseguridad (solo normas)')
+        sub = df[df['Asignatura_clean'] == subject_clean].sample(frac=1).reset_index(drop=True)
 
-    qs = []
-    for _, row in sub.iterrows():
-        opts = [row[c] for c in sub.columns if c.startswith('Opción') and pd.notna(row[c])]
-        try:
-            correct = opts[int(row.get('Resp.', 1)) - 1]
-        except:
-            correct = None
-        random.shuffle(opts)
-        qs.append({'pregunta': row['Pregunta'], 'opciones': opts, 'correcto': correct})
+        qs = []
+        for _, row in sub.iterrows():
+            opts = [row[c] for c in sub.columns if c.startswith('Opción') and pd.notna(row[c])]
+            try:
+                correct = opts[int(row.get('Resp.', 1)) - 1]
+            except:
+                correct = None
+            random.shuffle(opts)
+            qs.append({'pregunta': row['Pregunta'], 'opciones': opts, 'correcto': correct})
 
-    st.session_state.questions = qs
-    st.session_state.current = 0
-    st.session_state.score = 0
-    st.session_state.answered = [False] * len(qs)
-    st.session_state.feedback = ''
-    st.session_state.page = 'quiz'
-    st.session_state.subject_clean = subject_clean
+        st.session_state.questions = qs
+        st.session_state.current = 0
+        st.session_state.score = 0
+        st.session_state.answered = [False] * len(qs)
+        st.session_state.feedback = ''
+        st.session_state.page = 'quiz'
+        st.session_state.subject_clean = subject_clean
 
 # Botón para Cambiar a Casos
 if st.button('Casos Prácticos', key='btn_cases'):
