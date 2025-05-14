@@ -3,80 +3,80 @@ import pandas as pd
 import random
 from pathlib import Path
 
-# Configuración de la página
-st.set_page_config(page_title='Quiz Interactivo', layout='wide')
+# Configuración de la página para máxima fluidez
+st.set_page_config(page_title='Quiz Rápido', layout='centered')
 
-# Función para inicializar preguntas en session_state
-def init_quiz():
+@st.cache_data
+def load_questions():
+    """Carga y baraja las preguntas, devuelve lista de dicts."""
     excel_path = Path(__file__).parent / 'Quizz Completo.xlsx'
-    if not excel_path.exists():
-        st.error(f"No encuentro el archivo `{excel_path.name}` en el directorio.")
-        st.stop()
-
     df = pd.read_excel(excel_path).dropna(subset=['Pregunta'])
-    df = df.sample(frac=1).reset_index(drop=True)
-
-    # Crear listas de estado para todas las preguntas
-    st.session_state.questions = []
-    st.session_state.answered = []
-    st.session_state.selections = []
-
+    df = df.sample(frac=1, random_state=42).reset_index(drop=True)
+    questions = []
     for _, row in df.iterrows():
-        opciones = [row[col] for col in df.columns if col.startswith('Opción') and pd.notna(row[col])]
+        opts = [row[col] for col in df.columns if col.startswith('Opción') and pd.notna(row[col])]
+        correct = None
         try:
-            correcto = opciones[int(row.get('Resp.', 1)) - 1]
-        except Exception:
-            correcto = None
-        random.shuffle(opciones)
-        st.session_state.questions.append({'pregunta': row['Pregunta'], 'opciones': opciones, 'correcto': correcto})
-        st.session_state.answered.append(False)
-        st.session_state.selections.append(None)
+            correct = opts[int(row.get('Resp.', 1)) - 1]
+        except:
+            pass
+        random.shuffle(opts)
+        questions.append({'pregunta': row['Pregunta'], 'opciones': opts, 'correcto': correct})
+    return questions
 
-# Inicializar quiz al inicio
+# Inicialización de session_state
 if 'questions' not in st.session_state:
-    init_quiz()
+    st.session_state.questions = load_questions()
+    st.session_state.score = 0
+    st.session_state.current = 0
+    st.session_state.answered = [False] * len(st.session_state.questions)
 
 questions = st.session_state.questions
-num_q = len(questions)
+n = len(questions)
+idx = st.session_state.current
 
-# Interfaz principal
-st.title('🎯 Quiz Interactivo')
-st.markdown('Selecciona tu respuesta y pulsa **Comprobar** para cada pregunta.')
+# Título y progreso simple
+st.title('🚀 Quiz Rápido')
+st.write(f'Pregunta {idx+1} de {n} — Aciertos: {st.session_state.score}')
 
-# Mostrar cada pregunta en un expander
-for i, q in enumerate(questions):
-    with st.expander(f'Pregunta {i+1} de {num_q}', expanded=False):
-        st.write(q['pregunta'])
-        choice = st.radio('', q['opciones'], key=f'opt_{i}')
+# Mostrar pregunta actual
+q = questions[idx]
+st.markdown(f"**{q['pregunta']}**")
+# Selector de opciones
+selection = st.radio('Opciones:', q['opciones'], key=f'q_{idx}')
 
-        # Comprobar respuesta sólo una vez
-        if not st.session_state.answered[i]:
-            if st.button('Comprobar', key=f'check_{i}'):
-                st.session_state.answered[i] = True
-                st.session_state.selections[i] = choice
-
-        # Feedback inmediato tras comprobar
-        if st.session_state.answered[i]:
-            if st.session_state.selections[i] == q['correcto']:
-                st.success('¡Correcto! 🎉')
+# Botones de acción
+col1, col2 = st.columns([1,1])
+with col1:
+    if not st.session_state.answered[idx]:
+        if st.button('✔ Comprobar'):
+            st.session_state.answered[idx] = True
+            if selection == q['correcto']:
+                st.session_state.score += 1
+                st.success('¡Correcto!')
             else:
-                st.error(f"Incorrecto. Respuesta correcta: **{q['correcto']}**")
+                st.error(f'Incorrecto. Correcto: {q["correcto"]}')
+with col2:
+    if st.session_state.answered[idx] and idx < n-1:
+        if st.button('➡ Siguiente'):
+            st.session_state.current += 1
+            st.experimental_rerun()
+    elif st.session_state.answered[idx] and idx == n-1:
+        if st.button('🏁 Ver resultado'):
+            st.session_state.current += 1
+            st.experimental_rerun()
 
-# Mostrar resultado final cuando todas respondidas
-if all(st.session_state.answered):
-    score = sum(1 for i in range(num_q) if st.session_state.selections[i] == questions[i]['correcto'])
+# Mostrar resultado final si acabó
+if st.session_state.current == n:
     st.markdown('---')
-    st.header('🏁 Resultado final')
-    st.write(f'Has acertado **{score}** de **{num_q}** preguntas.')
-    if score == num_q:
+    st.header('🎉 Resultado Final')
+    st.write(f'Has acertado **{st.session_state.score}** de **{n}** preguntas.')
+    if st.session_state.score == n:
         st.balloons()
-
-# Función para reiniciar el quiz
-def reset_quiz():
-    for key in ['questions', 'answered', 'selections']:
-        if key in st.session_state:
-            del st.session_state[key]
-
-# Botón de reinicio
-st.markdown('---')
-st.button('Reiniciar Quiz', on_click=reset_quiz)
+    if st.button('🔄 Reiniciar Quiz'):
+        # Reset completo
+        del st.session_state.questions
+        del st.session_state.score
+        del st.session_state.current
+        del st.session_state.answered
+        st.experimental_rerun()
