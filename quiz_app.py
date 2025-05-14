@@ -55,7 +55,14 @@ def init_quiz(subject_clean):
 
 # Cargar datos
 df_quiz = load_quiz_df()
-cases_df = load_cases_df()
+cases_df = load_cases_wide()
+# Normalizar columnas para casos prácticos
+if 'Asignatura' in cases_df.columns:
+    cases_df['Asignatura'] = cases_df['Asignatura'].astype(str).str.strip()
+    cases_df['Asignatura_clean'] = cases_df['Asignatura'].str.upper()
+else:
+    cases_df['Asignatura'] = 'General'
+    cases_df['Asignatura_clean'] = 'GENERAL'
 
 # Selección de asignatura
 display_subjects = sorted(df_quiz['Asignatura'].unique())
