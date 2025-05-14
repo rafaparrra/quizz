@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import random
-import redis
 import yaml
 from datetime import datetime
 from pathlib import Path
@@ -23,41 +22,10 @@ name, auth_status, username = auth.login('Login', 'main')
 if not auth_status:
     st.stop()
 
-# ------------------------------
-# Configuración de Redis para presencia
-# ------------------------------
-r_client = redis.from_url(st.secrets['REDIS_URL'])
-
-def touch_presence():
-    """Actualiza el timestamp de última actividad del usuario."""
-    r_client.hset('quiz_presence', username, datetime.utcnow().timestamp())
-
-# Primer registro de presencia al login
-touch_presence()
-
-# --------------------------------
-# Sidebar: usuarios activos
-# --------------------------------
-st.sidebar.header('Usuarios activos')
-now = datetime.utcnow().timestamp()
-entries = r_client.hgetall('quiz_presence') or {}
-active = []
-for user_bytes, ts_bytes in entries.items():
-    user = user_bytes.decode() if isinstance(user_bytes, bytes) else user_bytes
-    last_ts = float(ts_bytes)
-    if now - last_ts < 5 * 60:
-        active.append(user)
-if active:
-    for u in active:
-        st.sidebar.write(f'• {u}')
-else:
-    st.sidebar.write('— Ninguno —')
-
 # --------------------------------
 # Funciones auxiliares
 # --------------------------------
 def normalize_name(s):
-    """Quita acentos y caracteres no alfanuméricos, y pasa a mayúsculas."""
     s = str(s)
     nkfd = unicodedata.normalize('NFD', s)
     no_accents = ''.join(c for c in nkfd if unicodedata.category(c) != 'Mn')
@@ -107,7 +75,6 @@ def init_quiz(subject_clean):
 
 # Callbacks de quiz
 def check_answer():
-    touch_presence()
     idx = st.session_state.current
     choice = st.session_state.choice
     st.session_state.answered[idx] = True
@@ -119,12 +86,10 @@ def check_answer():
         st.session_state.feedback = f"Incorrecto. Correcto: {correct}"
 
 def go_prev():
-    touch_presence()
     st.session_state.current = max(0, st.session_state.current - 1)
     st.session_state.feedback = ''
 
 def go_next():
-    touch_presence()
     max_idx = len(st.session_state.questions) - 1
     st.session_state.current = min(max_idx, st.session_state.current + 1)
     st.session_state.feedback = ''
