@@ -45,7 +45,7 @@ def init_quiz(subject):
 
 # Cargar datos
 df_quiz = load_quiz_df()
-asignaturas = sorted(df_quiz['Asignatura'].unique())
+asignaturas = sorted(df_quiz['Asignatura'].dropna().astype(str).unique())
 cases_df = load_cases_df()
 
 # Seleccionar asignatura
