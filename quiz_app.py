@@ -18,7 +18,7 @@ def normalize_name(s):
 
 @st.cache_data
 def load_quiz_df():
-    path = Path(__file__).parent / 'Quizz Completo.xlsx'
+    path = Path(__file__).parent / 'Quizz_Completo_Actualizado.xlsx'
     df = pd.read_excel(path)
     if 'Asignatura' in df.columns:
         df['Asignatura'] = df['Asignatura'].fillna(method='ffill')
@@ -154,14 +154,6 @@ else:
     if total == 0:
         st.warning('No hay preguntas para esta asignatura.')
     else:
-            # Mostrar botón para volver al quiz normal si estás en el modo solo-normas
-    if subject_clean == normalize_name('Normativa de Ciberseguridad (solo normas)'):
-        if st.button('↩ Volver al Quiz completo de Normativa'):
-            subject_clean = normalize_name('Normativa de Ciberseguridad')
-            st.session_state.subject_clean = subject_clean
-            init_quiz(subject_clean)
-            st.session_state.page = 'quiz'
-
         st.write(f"Asignatura: **{subject}**")
         st.write(f"Pregunta {idx+1} de {total} | Aciertos: {sc} | Errores: {wrong}")
         st.markdown(f"**{qs[idx]['pregunta']}**")
@@ -183,3 +175,11 @@ else:
 
         if idx == total - 1:
             st.button('🔄 Reiniciar Quiz', key='btn_restart', on_click=lambda: init_quiz(subject_clean))
+
+        # Botón para volver al quiz completo si estás en el modo solo normas
+        if subject_clean == normalize_name('Normativa de Ciberseguridad (solo normas)'):
+            if st.button('↩ Volver al Quiz completo de Normativa'):
+                subject_clean = normalize_name('Normativa de Ciberseguridad')
+                st.session_state.subject_clean = subject_clean
+                init_quiz(subject_clean)
+                st.session_state.page = 'quiz'
