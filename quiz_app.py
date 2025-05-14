@@ -77,10 +77,10 @@ if st.session_state.get('subject_clean') != subject_clean:
 # Navegación global
 col_q, col_c = st.columns(2)
 with col_q:
-    if st.button('Ver Preguntas'):
+    if st.button('Ver Preguntas', key='btn_ver_preguntas'):
         st.session_state.page = 'quiz'
 with col_c:
-    if st.button('Casos Prácticos'):
+    if st.button('Casos Prácticos', key='btn_casos_practicos'):
         st.session_state.page = 'cases'
 
 # Funciones de interacción
@@ -125,7 +125,7 @@ if page == 'cases':
             st.info('No hay URLs en la columna seleccionada.')
     else:
         st.info('No hay casos prácticos configurados para esta asignatura.')
-    if st.button('Volver a Preguntas'):
+    if st.button('Volver a Preguntas', key='btn_volver_preguntas'):
         st.session_state.page = 'quiz'
 else:
     qs = st.session_state.questions
@@ -145,11 +145,11 @@ else:
 
         c1, c2, c3 = st.columns(3)
         with c1:
-            c1.button('⬅ Anterior', on_click=go_prev, disabled=(idx == 0))
+            c1.button('⬅ Anterior', on_click=go_prev, disabled=(idx == 0), key='btn_anterior')
         with c2:
-            c2.button('✔ Comprobar', on_click=check_answer, disabled=st.session_state.answered[idx])
+            c2.button('✔ Comprobar', on_click=check_answer, disabled=st.session_state.answered[idx], key='btn_comprobar')
         with c3:
-            c3.button('➡ Siguiente', on_click=go_next, disabled=not st.session_state.answered[idx])
+            c3.button('➡ Siguiente', on_click=go_next, disabled=not st.session_state.answered[idx], key='btn_siguiente')
 
         if st.session_state.feedback:
             if 'Correcto' in st.session_state.feedback:
@@ -161,7 +161,7 @@ else:
         st.write(f"Has acertado **{sc}** de **{total}** preguntas y fallado **{wrong}**.")
         if sc == total:
             st.balloons()
-        if st.button('Reiniciar Quiz'):
+        if st.button('Reiniciar Quiz', key='btn_reiniciar_quiz'):
             init_quiz(subject_clean)
 df_quiz = load_quiz_df()
 cases_df = load_cases_wide()
