@@ -18,7 +18,7 @@ def normalize_name(s):
 
 @st.cache_data
 def load_quiz_df():
-    path = Path(__file__).parent / 'Quizz_Completo_Actualizado.xlsx'
+    path = Path(__file__).parent / 'Quizz Completo.xlsx'
     df = pd.read_excel(path)
     if 'Asignatura' in df.columns:
         df['Asignatura'] = df['Asignatura'].fillna(method='ffill')
