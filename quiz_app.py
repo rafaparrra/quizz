@@ -24,6 +24,7 @@ def load_quiz_df():
 def load_cases_df():
     path = Path(__file__).parent / 'Daypo_URLs_por_Asignatura.xlsx'
     wide = pd.read_excel(path)
+    # Convertir formato ancho a filas
     cases = wide.melt(var_name='Asignatura', value_name='URL')
     cases['Asignatura'] = cases['Asignatura'].astype(str).str.strip()
     cases['Asignatura_clean'] = cases['Asignatura'].str.upper()
@@ -59,30 +60,30 @@ def init_quiz(subject_clean):
     st.session_state.answered = [False] * len(qs)
 
 # Cargar datos
- df_quiz = load_quiz_df()
- cases_df = load_cases_df()
+df_quiz = load_quiz_df()
+cases_df = load_cases_df()
 
-# Selector de asignatura
- subjects = sorted(df_quiz['Asignatura'].unique())
- if len(subjects) <= 1:
-     subjects = ['TODAS']
- subject = st.selectbox('Selecciona asignatura:', subjects)
- subject_clean = subject.strip().upper()
+# Selección de asignatura
+display_subjects = sorted(df_quiz['Asignatura'].unique())
+if len(display_subjects) <= 1:
+    display_subjects = ['TODAS']
+subject = st.selectbox('Selecciona asignatura:', display_subjects)
+subject_clean = subject.strip().upper()
 
 # Reiniciar quiz al cambiar asignatura
- if st.session_state.get('subject_clean') != subject_clean:
-     st.session_state.subject_clean = subject_clean
-     init_quiz(subject_clean)
-     st.session_state.page = 'quiz'
+if st.session_state.get('subject_clean') != subject_clean:
+    st.session_state.subject_clean = subject_clean
+    init_quiz(subject_clean)
+    st.session_state.page = 'quiz'
 
-# Navegación entre páginas: preguntas vs casos
- col_q, col_c = st.columns(2)
- with col_q:
-     if st.button('Ver Preguntas'):
-         st.session_state.page = 'quiz'
- with col_c:
-     if st.button('Casos Prácticos'):
-         st.session_state.page = 'cases'
+# Botones globales para cambiar de página
+col_q, col_c = st.columns(2)
+with col_q:
+    if st.button('Ver Preguntas'):
+        st.session_state.page = 'quiz'
+with col_c:
+    if st.button('Casos Prácticos'):
+        st.session_state.page = 'cases'
 
 # Funciones de interacción
 def check_answer():
@@ -108,51 +109,51 @@ def go_next():
     st.session_state.feedback = ''
     st.session_state.pop('choice', None)
 
-# Renderizado según página
- page = st.session_state.get('page', 'quiz')
- if page == 'cases':
-     st.header(f'Casos Prácticos – {subject}')
-     sub = cases_df[cases_df['Asignatura_clean'] == subject_clean]
-     if sub.empty:
-         st.info('No hay casos prácticos para esta asignatura.')
-     else:
-         for _, row in sub.iterrows():
-             st.markdown(f"- [{row['Asignatura']}]({row['URL']})")
-     if st.button('Volver a Preguntas'):
-         st.session_state.page = 'quiz'
- else:
-     qs = st.session_state.questions
-     total = len(qs)
-     idx = st.session_state.current
-     sc = st.session_state.score
-     ans = sum(st.session_state.answered)
-     wrong = ans - sc
+# Mostrar según página seleccionada
+page = st.session_state.get('page', 'quiz')
+if page == 'cases':
+    st.header(f'Casos Prácticos – {subject}')
+    sub = cases_df[cases_df['Asignatura_clean'] == subject_clean]
+    if sub.empty:
+        st.info('No hay casos prácticos para esta asignatura.')
+    else:
+        for _, row in sub.iterrows():
+            st.markdown(f"- [{row['Asignatura']}]({row['URL']})")
+    if st.button('Volver a Preguntas'):
+        st.session_state.page = 'quiz'
+else:
+    qs = st.session_state.questions
+    total = len(qs)
+    idx = st.session_state.current
+    sc = st.session_state.score
+    ans = sum(st.session_state.answered)
+    wrong = ans - sc
 
-     if total == 0:
-         st.warning('No hay preguntas para esta asignatura.')
-     elif idx < total:
-         st.write(f"Asignatura: **{subject}**")
-         st.write(f"Pregunta {idx+1} de {total} | Aciertos: {sc} | Errores: {wrong}")
-         st.markdown(f"**{qs[idx]['pregunta']}**")
-         st.radio('Opciones:', qs[idx]['opciones'], key='choice')
+    if total == 0:
+        st.warning('No hay preguntas para esta asignatura.')
+    elif idx < total:
+        st.write(f"Asignatura: **{subject}**")
+        st.write(f"Pregunta {idx+1} de {total} | Aciertos: {sc} | Errores: {wrong}")
+        st.markdown(f"**{qs[idx]['pregunta']}**")
+        st.radio('Opciones:', qs[idx]['opciones'], key='choice')
 
-         c1, c2, c3 = st.columns(3)
-         with c1:
-             c1.button('⬅ Anterior', on_click=go_prev, disabled=(idx == 0))
-         with c2:
-             c2.button('✔ Comprobar', on_click=check_answer, disabled=st.session_state.answered[idx])
-         with c3:
-             c3.button('➡ Siguiente', on_click=go_next, disabled=not st.session_state.answered[idx])
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            c1.button('⬅ Anterior', on_click=go_prev, disabled=(idx == 0))
+        with c2:
+            c2.button('✔ Comprobar', on_click=check_answer, disabled=st.session_state.answered[idx])
+        with c3:
+            c3.button('➡ Siguiente', on_click=go_next, disabled=not st.session_state.answered[idx])
 
-         if st.session_state.feedback:
-             if 'Correcto' in st.session_state.feedback:
-                 st.success(st.session_state.feedback)
-             else:
-                 st.error(st.session_state.feedback)
-     else:
-         st.header('Resultado Final')
-         st.write(f"Has acertado **{sc}** de **{total}** preguntas y fallado **{wrong}**.")
-         if sc == total:
-             st.balloons()
-         if st.button('Reiniciar Quiz'):
-             init_quiz(subject_clean)
+        if st.session_state.feedback:
+            if 'Correcto' in st.session_state.feedback:
+                st.success(st.session_state.feedback)
+            else:
+                st.error(st.session_state.feedback)
+    else:
+        st.header('Resultado Final')
+        st.write(f"Has acertado **{sc}** de **{total}** preguntas y fallado **{wrong}**.")
+        if sc == total:
+            st.balloons()
+        if st.button('Reiniciar Quiz'):
+            init_quiz(subject_clean)
