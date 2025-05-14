@@ -4,21 +4,17 @@ import random
 from pathlib import Path
 
 # Configuración de la página
-st.set_page_config(
-    page_title='Quiz de Preguntas',
-    layout='centered',
-    initial_sidebar_state='expanded'
-)
+st.set_page_config(page_title='Quiz Interactivo', layout='wide')
 
-# Función para inicializar preguntas en session_state
+# Inicializar quiz y estado
 def init_quiz():
     excel_path = Path(__file__).parent / 'Quizz Completo.xlsx'
     if not excel_path.exists():
-        st.error(f'No encuentro el archivo `{excel_path.name}` en el directorio.')
+        st.error(f"No encuentro el archivo `{excel_path.name}` en el directorio.")
         st.stop()
     df = pd.read_excel(excel_path).dropna(subset=['Pregunta'])
-    df = df.sample(frac=1).reset_index(drop=True)
-    questions = []
+    df = df.sample(frac=1, random_state=None).reset_index(drop=True)
+    st.session_state.questions = []
     for _, row in df.iterrows():
         opciones = [row[col] for col in df.columns if col.startswith('Opción') and pd.notna(row[col])]
         try:
@@ -26,56 +22,60 @@ def init_quiz():
         except Exception:
             correcto = None
         random.shuffle(opciones)
-        questions.append({
+        st.session_state.questions.append({
             'pregunta': row['Pregunta'],
             'opciones': opciones,
             'correcto': correcto
         })
-    st.session_state.questions = questions
     st.session_state.score = 0
-    st.session_state.answered = [False] * len(questions)
+    # Crear keys individuales para trackear respuestas
+    for i in range(len(st.session_state.questions)):
+        st.session_state[f'answered_{i}'] = False
+        st.session_state[f'selected_{i}'] = None
 
-# Inicializar si es la primera vez
+# Si no está inicializado, lanzar init
 if 'questions' not in st.session_state:
     init_quiz()
 
-questions = st.session_state.questions
-n = len(questions)
+# Mostrar progreso en sidebar
+num_q = len(st.session_state.questions)
+st.sidebar.title('Progreso')
+st.sidebar.write(f'Acertadas: {st.session_state.score} / {num_q}')
+st.sidebar.progress(0 if num_q == 0 else st.session_state.score / num_q)
 
+# Título principal
 st.title('🎯 Quiz Interactivo')
-st.markdown('Selecciona tu respuesta y pulsa **Comprobar** para ver si es correcta sin recargar.')
+st.markdown('Selecciona tu respuesta y pulsa **Comprobar** para cada pregunta.')
 
-# Mostrar cada pregunta
-total_answered = st.session_state.score
-for idx, q in enumerate(questions):
-    st.subheader(f'Pregunta {idx+1} de {n}')
+# Mostrar preguntas y lógica por pregunta
+for i, q in enumerate(st.session_state.questions):
+    st.subheader(f'Pregunta {i+1} de {num_q}')
     st.write(q['pregunta'])
-    answer_key = f'answer_{idx}'
-    chosen = st.radio('', q['opciones'], key=answer_key)
-    if not st.session_state.answered[idx]:
-        if st.button('Comprobar', key=f'check_{idx}'):
-            is_correct = (chosen == q['correcto'])
-            st.session_state.answered[idx] = True
-            if is_correct:
+    # Radio con la opción seleccionada
+    st.session_state[f'selected_{i}'] = st.radio(
+        '', q['opciones'], key=f'sel_{i}'
+    )
+    if not st.session_state[f'answered_{i}']:
+        if st.button('Comprobar', key=f'check_{i}'):
+            st.session_state[f'answered_{i}'] = True
+            if st.session_state[f'selected_{i}'] == q['correcto']:
                 st.session_state.score += 1
                 st.success('¡Correcto! 🎉')
             else:
-                st.error(f'Incorrecto. La respuesta correcta es: **{q["correcto"]}**')
+                st.error(f"Incorrecto. La respuesta correcta es: **{q['correcto']}**")
     else:
-        if st.session_state[f'answer_{idx}'] == q['correcto']:
+        # Feedback permanente después de comprobar
+        if st.session_state[f'selected_{i}'] == q['correcto']:
             st.success('Has contestado correctamente 😊')
         else:
-            st.error(f"Contestaste: **{st.session_state[f'answer_{idx}']}**. Correcto: **{q['correcto']}**")
+            sel = st.session_state[f'selected_{i}']
+            st.error(f"Contestaste: **{sel}**. Correcto: **{q['correcto']}**")
 
-# Mostrar puntuación actual
-st.sidebar.header('Progreso')
-st.sidebar.write(f'Acertadas: {st.session_state.score} / {n}')
-st.sidebar.progress(st.session_state.score / n)
-
-# Botón para reiniciar toda la sesión
+# Botón para reiniciar
 st.markdown('---')
 if st.button('Reiniciar Quiz'):
-    for key in list(st.session_state.keys()):
-        if key.startswith('answer_') or key.startswith('check_') or key in ['questions', 'score', 'answered']:
-            del st.session_state[key]
+    # Limpiar únicamente las claves que hemos creado
+    keys_to_delete = [k for k in st.session_state.keys() if k.startswith('answered_') or k.startswith('selected_') or k in ['questions', 'score']]
+    for k in keys_to_delete:
+        del st.session_state[k]
     st.experimental_rerun()
