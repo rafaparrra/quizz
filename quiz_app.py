@@ -22,12 +22,13 @@ def load_questions():
         qs.append({'pregunta': row['Pregunta'], 'opciones': opts, 'correcto': correct})
     return qs
 
-# Inicialización del estado
+# Inicialización de estado
 if 'questions' not in st.session_state:
     st.session_state.questions = load_questions()
     st.session_state.current = 0
     st.session_state.answered = [False] * len(st.session_state.questions)
     st.session_state.selections = [None] * len(st.session_state.questions)
+    st.session_state.score = 0
 
 qs = st.session_state.questions
 n = len(qs)
@@ -36,27 +37,22 @@ idx = st.session_state.current
 # Pantalla de Quiz
 st.title('🚀 Quiz Rápido')
 if idx < n:
-    st.write(f'Pregunta {idx+1} de {n}   |   Aciertos: {sum(1 for i in range(n) if st.session_state.answered[i] and st.session_state.selections[i] == qs[i]["correcto"]) }')
+    st.write(f'Pregunta {idx+1} de {n}   |   Aciertos: {st.session_state.score}')
     q = qs[idx]
-    st.markdown(f"**{q['pregunta']}**")
+    choice = st.radio('Opciones:', q['opciones'], key=f'choice_{idx}')
 
-    # Opciones con radio
-    choice_key = f'choice_{idx}'
-    if choice_key not in st.session_state:
-        st.session_state[choice_key] = None
-    st.session_state[choice_key] = st.radio('Opciones:', q['opciones'], key=choice_key)
-
-    # Botón Comprobar
+    # Comprobar respuesta
     if not st.session_state.answered[idx]:
         if st.button('✔ Comprobar'):
             st.session_state.answered[idx] = True
-            st.session_state.selections[idx] = st.session_state[choice_key]
-            if st.session_state.selections[idx] == q['correcto']:
+            st.session_state.selections[idx] = choice
+            if choice == q['correcto']:
+                st.session_state.score += 1
                 st.success('¡Correcto! 🎉')
             else:
                 st.error(f'Incorrecto. Correcto: {q["correcto"]}')
     else:
-        # Botón para avanzar o ver resultado
+        # Avanzar a siguiente o ver resultado
         if idx < n - 1:
             if st.button('➡ Siguiente'):
                 st.session_state.current += 1
@@ -65,13 +61,9 @@ if idx < n:
                 st.session_state.current += 1
 else:
     # Resultado final
-    score = sum(1 for i in range(n) if st.session_state.answered[i] and st.session_state.selections[i] == qs[i]['correcto'])
     st.header('🎉 Resultado Final')
-    st.write(f'Has acertado **{score}** de **{n}** preguntas.')
-    if score == n:
+    st.write(f'Has acertado **{st.session_state.score}** de **{n}** preguntas.')
+    if st.session_state.score == n:
         st.balloons()
-    # Reiniciar Quiz
     if st.button('🔄 Reiniciar'):
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
-        st.experimental_rerun()
+        st.session_state.clear()
