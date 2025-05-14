@@ -4,7 +4,7 @@ import random
 from pathlib import Path
 
 # Configuración de la página
-st.set_page_config(page_title='Quiz Rápido', layout='centered')
+st.set_page_config(page_title='Quiz', layout='centered')
 
 # Inicializar estado de la sesión con preguntas y orden aleatorio
 if 'questions' not in st.session_state:
@@ -64,8 +64,7 @@ correct_count = st.session_state.score
 answered_total = sum(st.session_state.answered)
 wrong_count = answered_total - correct_count
 
-# Interfaz principal
-st.title('🚀 Quiz Rápido')
+# Interfaz principal sin título extra
 if idx < n:
     q = questions[idx]
     st.write(f'Pregunta {idx+1} de {n} | Aciertos: {correct_count} | Errores: {wrong_count}')
@@ -87,10 +86,9 @@ if idx < n:
             st.error(st.session_state.feedback)
 else:
     # Pantalla de resultados
-    st.header('🎉 Resultado Final')
+    st.header('Resultado Final')
     st.write(f'Has acertado **{correct_count}** de **{n}** preguntas y fallado **{wrong_count}**.')
     if correct_count == n:
         st.balloons()
     if st.button('🔄 Reiniciar'):
-        for k in list(st.session_state.keys()):
-            del st.session_state[k]
+        st.session_state.clear()
