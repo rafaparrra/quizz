@@ -1,0 +1,16 @@
+credentials:
+users:
+rafa.parrra:
+name: Rafa Parrra
+password: "r94cd8jGq1g3"
+ARM:
+name: ARM
+password: "HOt5w0FzfMFf"
+Fabo:
+name: Fabo
+password: "J8laMITm1L3X"
+
+cookie:
+name: quizapp\_session
+key: alguna\_clave\_secreta\_aleatoria
+expiry\_days: 1
