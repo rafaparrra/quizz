@@ -4,7 +4,8 @@ import random
 from pathlib import Path
 import unicodedata
 import re
-from docx import Document
+import zipfile
+import xml.etree.ElementTree as ET  # para extraer texto de .docx sin dependencias externas
 
 # Configuración de la página
 st.set_page_config(page_title='Quiz por Asignatura', layout='wide')
