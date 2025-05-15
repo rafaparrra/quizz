@@ -19,7 +19,7 @@ def normalize_name(s):
 @st.cache_data
 def load_quiz_df():
     """Carga el quiz completo desde el Excel principal."""
-    path = Path(__file__).parent / 'Quizz_Completo_Actualizado.xlsx'
+    path = Path(__file__).parent / 'Quizz Completo.xlsx'
     df = pd.read_excel(path)
     # Rellenar asignatura si falta\    
     if 'Asignatura' in df.columns:
