@@ -9,7 +9,9 @@ from docx import Document
 # Configuración de la página
 st.set_page_config(page_title='Quiz por Asignatura', layout='wide')
 
-# Función para normalizar nombres def normalize_name(s):
+# Función para normalizar nombres
+
+def normalize_name(s):
     s = str(s)
     nkfd = unicodedata.normalize('NFD', s)
     no_accents = ''.join(c for c in nkfd if unicodedata.category(c) != 'Mn')
@@ -125,13 +127,12 @@ def go_next():
     st.session_state.feedback = ''
     st.session_state.pop('choice', None)
 
-# Carga inicial de datos
+# Carga inicial
 df_excel = load_quiz_df()
 df_normas = load_quiz_normas_shuffled()
 df_docx = load_docx_quiz()
 cases_wide = load_cases_wide()
 
-# Sidebar de navegación
 st.sidebar.header("Navegación")
 page = st.sidebar.selectbox('Elige página:', [
     'Quiz general',
@@ -140,7 +141,7 @@ page = st.sidebar.selectbox('Elige página:', [
     'Casos Prácticos'
 ])
 
-# Inicialización según página seleccionada
+# Inicializar quiz según página seleccionada
 if page == 'Quiz general':
     init_quiz_from_df(df_excel, normalize_name('TODAS'))
 elif page == 'Asignatura 2.0':
@@ -190,6 +191,6 @@ if page != 'Casos Prácticos':
 
         if idx == total - 1:
             st.button('🔄 Reiniciar Quiz', on_click=lambda: init_quiz_from_df(
-                df_excel if page=='Quiz general' else df_docx if page=='Asignatura 2.0' else df_normas,
-                normalize_name('TODAS') if page=='Quiz general' else normalize_name(page)
+                df_excel if page == 'Quiz general' else df_docx if page == 'Asignatura 2.0' else df_normas,
+                normalize_name('TODAS') if page == 'Quiz general' else normalize_name(page)
             ))
