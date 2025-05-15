@@ -2,23 +2,23 @@ import streamlit as st
 import pandas as pd
 import random
 from pathlib import Path
-import unicodedata, re
+import unicodedata
+import re
 from docx import Document
 
 # Configuración de la página
 st.set_page_config(page_title='Quiz por Asignatura', layout='wide')
 
-# Función para normalizar nombres
-
-def normalize_name(s):
+# Función para normalizar nombres def normalize_name(s):
     s = str(s)
     nkfd = unicodedata.normalize('NFD', s)
     no_accents = ''.join(c for c in nkfd if unicodedata.category(c) != 'Mn')
-    return re.sub(r'[^A-Za-z0-9]', '', no_accents).upper()
+    cleaned = re.sub(r'[^A-Za-z0-9]', '', no_accents)
+    return cleaned.upper()
 
 # Carga del Excel completo
 def load_quiz_df():
-    path = Path(__file__).parent / 'Quizz Completo.xlsx'
+    path = Path(__file__).parent / 'Quizz_Completo_Actualizado.xlsx'
     df = pd.read_excel(path)
     if 'Asignatura' in df.columns:
         df['Asignatura'] = df['Asignatura'].fillna(method='ffill')
@@ -36,7 +36,7 @@ def load_quiz_normas_shuffled():
     df['Asignatura_clean'] = df['Asignatura'].apply(normalize_name)
     return df.dropna(subset=['Pregunta'])
 
-# Carga de preguntas desde archivos DOCX en root
+# Carga de preguntas desde archivos DOCX en el root
 def load_docx_quiz():
     DOCX_FILES = [
         "Simulacro_Incidentes_Examen_SOL.docx",
@@ -80,13 +80,13 @@ def load_docx_quiz():
     df['Asignatura_clean'] = df['Asignatura'].apply(normalize_name)
     return df
 
-# Carga de casos amplios
+# Carga de casos prácticos
 def load_cases_wide():
     path = Path(__file__).parent / 'Daypo_URLs_por_Asignatura.xlsx'
     return pd.read_excel(path)
 
-# Inicializa un quiz desde cualquier DataFrame y asignatura
- def init_quiz_from_df(df, subject_clean):
+# Función genérica para iniciar un quiz desde un DataFrame
+def init_quiz_from_df(df, subject_clean):
     sub = df[df['Asignatura_clean'] == subject_clean].sample(frac=1).reset_index(drop=True)
     qs = []
     for _, row in sub.iterrows():
@@ -108,12 +108,12 @@ def check_answer():
     idx = st.session_state.current
     choice = st.session_state.choice
     st.session_state.answered[idx] = True
-    correct = st.session_state.questions[idx]['correcto']
-    if choice == correct:
+    correcto = st.session_state.questions[idx]['correcto']
+    if choice == correcto:
         st.session_state.score += 1
         st.session_state.feedback = '¡Correcto! 🎉'
     else:
-        st.session_state.feedback = f"Incorrecto. Correcto: {correct}"
+        st.session_state.feedback = f"Incorrecto. Correcto: {correcto}"
 
 def go_prev():
     st.session_state.current = max(0, st.session_state.current - 1)
@@ -126,14 +126,14 @@ def go_next():
     st.session_state.pop('choice', None)
 
 # Carga inicial de datos
- df_excel = load_quiz_df()
- df_normas = load_quiz_normas_shuffled()
- df_docx = load_docx_quiz()
- cases_wide = load_cases_wide()
+df_excel = load_quiz_df()
+df_normas = load_quiz_normas_shuffled()
+df_docx = load_docx_quiz()
+cases_wide = load_cases_wide()
 
-# Sidebar de páginas
-e st.sidebar.header("Navegación")
-e page = st.sidebar.selectbox('Elige página:', [
+# Sidebar de navegación
+st.sidebar.header("Navegación")
+page = st.sidebar.selectbox('Elige página:', [
     'Quiz general',
     'Asignatura 2.0',
     'Normativa de Ciberseguridad',
@@ -188,7 +188,6 @@ if page != 'Casos Prácticos':
             else:
                 st.error(st.session_state.feedback)
 
-        # Botón de reinicio
         if idx == total - 1:
             st.button('🔄 Reiniciar Quiz', on_click=lambda: init_quiz_from_df(
                 df_excel if page=='Quiz general' else df_docx if page=='Asignatura 2.0' else df_normas,
