@@ -5,13 +5,12 @@ from pathlib import Path
 import unicodedata
 import re
 import zipfile
-import xml.etree.ElementTree as ET  # para extraer texto de .docx sin dependencias externas
+import xml.etree.ElementTree as ET
 
 # Configuración de la página
 st.set_page_config(page_title='Quiz por Asignatura', layout='wide')
 
 # Función para normalizar nombres
-
 def normalize_name(s):
     s = str(s)
     nkfd = unicodedata.normalize('NFD', s)
@@ -19,7 +18,22 @@ def normalize_name(s):
     cleaned = re.sub(r'[^A-Za-z0-9]', '', no_accents)
     return cleaned.upper()
 
-# Carga del Excel completo
+# Extraer texto de archivos .docx sin dependencias externas
+def extract_text_from_docx(path: Path) -> list[str]:
+    """Extrae todos los párrafos de un .docx usando la librería zipfile y xml."""
+    with zipfile.ZipFile(path, 'r') as z:
+        xml_content = z.read('word/document.xml')
+    root = ET.fromstring(xml_content)
+    namespace = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
+    paragraphs = []
+    for p in root.iter(f'{namespace}p'):
+        texts = [t.text for t in p.iter(f'{namespace}t') if t.text]
+        if texts:
+            paragraphs.append(''.join(texts))
+    return paragraphs
+
+# Carga del quiz completo desde Excel
+@st.cache_data
 def load_quiz_df():
     path = Path(__file__).parent / 'Quizz_Completo_Actualizado.xlsx'
     df = pd.read_excel(path)
@@ -31,7 +45,8 @@ def load_quiz_df():
     df['Asignatura_clean'] = df['Asignatura'].apply(normalize_name)
     return df.dropna(subset=['Pregunta'])
 
-# Carga del Excel de Normas barajado
+# Carga de normas barajadas desde Excel
+@st.cache_data
 def load_quiz_normas_shuffled():
     path = Path(__file__).parent / 'Preguntas_Normas_Ciberseguridad_Shuffled.xlsx'
     df = pd.read_excel(path)
@@ -39,7 +54,7 @@ def load_quiz_normas_shuffled():
     df['Asignatura_clean'] = df['Asignatura'].apply(normalize_name)
     return df.dropna(subset=['Pregunta'])
 
-# Carga de preguntas desde archivos DOCX en el root
+# Carga de preguntas desde archivos .docx en el root
 def load_docx_quiz():
     DOCX_FILES = [
         "Simulacro_Incidentes_Examen_SOL.docx",
@@ -56,8 +71,7 @@ def load_docx_quiz():
         if not p.exists():
             st.warning(f"⚠️ No encontrado: {fname}")
             continue
-        doc = Document(p)
-        lines = [para.text.strip() for para in doc.paragraphs if para.text.strip()]
+        lines = extract_text_from_docx(p)
         if not lines:
             continue
         pregunta = lines[0]
@@ -68,6 +82,7 @@ def load_docx_quiz():
                 opciones.append(m.group(1).strip())
             if len(opciones) >= 4:
                 break
+        # Rellenar hasta 4 opciones
         while len(opciones) < 4:
             opciones.append(None)
         rows.append({
@@ -84,12 +99,13 @@ def load_docx_quiz():
     return df
 
 # Carga de casos prácticos
+@st.cache_data
 def load_cases_wide():
     path = Path(__file__).parent / 'Daypo_URLs_por_Asignatura.xlsx'
     return pd.read_excel(path)
 
-# Función genérica para iniciar un quiz desde un DataFrame
-def init_quiz_from_df(df, subject_clean):
+# Función genérica para inicializar un quiz desde un DataFrame
+def init_quiz_from_df(df: pd.DataFrame, subject_clean: str):
     sub = df[df['Asignatura_clean'] == subject_clean].sample(frac=1).reset_index(drop=True)
     qs = []
     for _, row in sub.iterrows():
@@ -128,12 +144,13 @@ def go_next():
     st.session_state.feedback = ''
     st.session_state.pop('choice', None)
 
-# Carga inicial
+# Carga inicial de datos
 df_excel = load_quiz_df()
 df_normas = load_quiz_normas_shuffled()
 df_docx = load_docx_quiz()
 cases_wide = load_cases_wide()
 
+# Sidebar de navegación
 st.sidebar.header("Navegación")
 page = st.sidebar.selectbox('Elige página:', [
     'Quiz general',
@@ -148,7 +165,7 @@ if page == 'Quiz general':
 elif page == 'Asignatura 2.0':
     init_quiz_from_df(df_docx, normalize_name('Asignatura 2.0'))
 elif page == 'Normativa de Ciberseguridad':
-    init_quiz_from_df(df_normas, normalize_name('Normativa de Ciberseguridad (solo normas)'))
+    init_quiz_from_df(df_normas, normalize_name('Normativa de Ciberseguridad'))
 else:
     st.header('Casos Prácticos – Normativa de Ciberseguridad')
     matches = [col for col in cases_wide.columns if normalize_name(col).find(normalize_name('Normativa de Ciberseguridad')) != -1]
