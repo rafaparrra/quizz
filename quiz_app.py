@@ -8,7 +8,6 @@ import unicodedata, re
 st.set_page_config(page_title='Quiz por Asignatura', layout='centered')
 
 # Función para normalizar nombres
-
 def normalize_name(s):
     s = str(s)
     nkfd = unicodedata.normalize('NFD', s)
@@ -21,7 +20,7 @@ def load_quiz_df():
     """Carga el quiz completo desde el Excel principal."""
     path = Path(__file__).parent / 'Quizz Completo.xlsx'
     df = pd.read_excel(path)
-    # Rellenar asignatura si falta\    
+    # Rellenar asignatura si falta
     if 'Asignatura' in df.columns:
         df['Asignatura'] = df['Asignatura'].fillna(method='ffill')
     else:
@@ -41,6 +40,7 @@ def load_quiz_normas_shuffled():
 
 @st.cache_data
 def load_cases_wide():
+    """Carga los casos prácticos."""
     path = Path(__file__).parent / 'Daypo_URLs_por_Asignatura.xlsx'
     return pd.read_excel(path)
 
@@ -116,8 +116,7 @@ def go_next():
     st.session_state.feedback = ''
     st.session_state.pop('choice', None)
 
-
-# Carga inicial
+# Carga inicial de datos
 df_quiz = load_quiz_df()
 cases_wide = load_cases_wide()
 
@@ -127,13 +126,15 @@ if len(display_subjects) == 1:
     display_subjects = ['TODAS'] + display_subjects
 subject = st.selectbox('Selecciona asignatura:', display_subjects, key='subject')
 subject_clean = normalize_name(subject)
-# Inicializar si cambia selector
-if st.session_state.get('subject_clean') != subject_clean:
-    st.session_state.subject_clean = subject_clean
-    init_quiz(subject_clean)
-    st.session_state.page = 'quiz'
 
-# Botón extra para solo normas (solo si la asignatura es Normativa de Ciberseguridad)
+# Inicializar quiz únicamente en modo normal cuando cambie seleccion
+if st.session_state.get('quiz_mode') != 'solo_normas':
+    if st.session_state.get('subject_clean') != subject_clean:
+        st.session_state.subject_clean = subject_clean
+        init_quiz(subject_clean)
+        st.session_state.page = 'quiz'
+
+# Botón extra para solo normas (visible solo si asignatura es Normativa de Ciberseguridad)
 if normalize_name(subject) == normalize_name('Normativa de Ciberseguridad'):
     if st.button('🧾 Quiz solo Normas de Ciberseguridad'):
         load_normas_quiz()
@@ -157,7 +158,7 @@ if page == 'cases':
     else:
         st.info('No hay casos prácticos para esta asignatura.')
     if st.button('Volver a Preguntas', key='btn_back'):
-        # Volver al quiz según modo actual
+        # Dependiendo del modo, recargar correspondiente
         if st.session_state.quiz_mode == 'solo_normas':
             load_normas_quiz()
         else:
@@ -193,12 +194,13 @@ else:
             else:
                 st.error(st.session_state.feedback)
 
-        # Botón reiniciar según modo\        if idx == total - 1:
+        # Botón reiniciar según modo
+        if idx == total - 1:
             if st.session_state.quiz_mode == 'solo_normas':
                 st.button('🔄 Reiniciar Quiz (Normas)', key='btn_restart_normas', on_click=load_normas_quiz)
             else:
                 st.button('🔄 Reiniciar Quiz', key='btn_restart', on_click=lambda: init_quiz(subject_clean))
-        
+
         # Botón volver a completo si estás en modo solo normas
         if st.session_state.quiz_mode == 'solo_normas':
             if st.button('↩ Volver al Quiz completo de Normativa'):
