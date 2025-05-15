@@ -47,7 +47,7 @@ def load_docx_quiz():
         "Simulacro_Hacking_Etico_Examen-SOL.docx",
         "Simulacro_Bastionado_Examen-SOL.docx",
         "Simulacro_Examen_Analisis-SOL.docx",
-        "Nombre_Docx_Faltante.docx"
+        "Simulacro_Normativa_Examen SOL.docx"
     ]
     rows = []
     base = Path(__file__).parent
